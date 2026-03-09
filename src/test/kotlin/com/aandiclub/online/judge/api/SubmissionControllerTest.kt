@@ -114,6 +114,23 @@ class SubmissionControllerTest {
     }
 
     @Test
+    fun `getResult polling returns 404 while running then 200 when completed`() = runTest {
+        val done = SubmissionResult(
+            submissionId = "poll-uuid",
+            status = SubmissionStatus.ACCEPTED,
+            testCases = emptyList(),
+        )
+        coEvery { submissionService.getResult("poll-uuid") } returnsMany listOf(null, done)
+
+        val first = controller.getResult("poll-uuid")
+        val second = controller.getResult("poll-uuid")
+
+        assertEquals(HttpStatus.NOT_FOUND, first.statusCode)
+        assertEquals(HttpStatus.OK, second.statusCode)
+        assertEquals(SubmissionStatus.ACCEPTED, second.body?.status)
+    }
+
+    @Test
     fun `getResult handles all final SubmissionStatus values`() = runTest {
         listOf(
             SubmissionStatus.WRONG_ANSWER,

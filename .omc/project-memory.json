@@ -1,0 +1,264 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1771167800288,
+  "projectRoot": "/Users/hansw/Desktop/WorkingSpace/online.judge",
+  "techStack": {
+    "languages": [
+      {
+        "name": "Kotlin",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "build.gradle.kts"
+        ]
+      }
+    ],
+    "frameworks": [],
+    "packageManager": "gradle",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": null,
+    "scripts": {}
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "src"
+    ],
+    "gitBranches": null
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "build": {
+      "path": "build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1771167800278,
+      "keyFiles": []
+    },
+    "docker": {
+      "path": "docker",
+      "purpose": null,
+      "fileCount": 1,
+      "lastAccessed": 1771167800279,
+      "keyFiles": [
+        "docker-compose.yml"
+      ]
+    },
+    "gradle": {
+      "path": "gradle",
+      "purpose": null,
+      "fileCount": 0,
+      "lastAccessed": 1771167800279,
+      "keyFiles": []
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 0,
+      "lastAccessed": 1771167800279,
+      "keyFiles": []
+    },
+    "src/test": {
+      "path": "src/test",
+      "purpose": "Test files",
+      "fileCount": 0,
+      "lastAccessed": 1771167800280,
+      "keyFiles": []
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/sandbox/SandboxRunner.kt",
+      "accessCount": 5,
+      "lastAccessed": 1771168979639,
+      "type": "file"
+    },
+    {
+      "path": "",
+      "accessCount": 3,
+      "lastAccessed": 1771167833727,
+      "type": "directory"
+    },
+    {
+      "path": "src/test/kotlin/com/aandiclub/online/judge/sandbox/SandboxRunnerTest.kt",
+      "accessCount": 3,
+      "lastAccessed": 1771169008799,
+      "type": "file"
+    },
+    {
+      "path": "TASK.md",
+      "accessCount": 2,
+      "lastAccessed": 1771167891893,
+      "type": "file"
+    },
+    {
+      "path": "PLAN.md",
+      "accessCount": 2,
+      "lastAccessed": 1771167891936,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/service/SubmissionService.kt",
+      "accessCount": 2,
+      "lastAccessed": 1771167897243,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/config/AppConfig.kt",
+      "accessCount": 2,
+      "lastAccessed": 1771167897273,
+      "type": "file"
+    },
+    {
+      "path": "docker/sandbox/kotlin/Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1771168638843,
+      "type": "file"
+    },
+    {
+      "path": "docker/sandbox/dart/Dockerfile",
+      "accessCount": 2,
+      "lastAccessed": 1771168639223,
+      "type": "file"
+    },
+    {
+      "path": "docker/sandbox/kotlin/KotlinRunner.kt",
+      "accessCount": 2,
+      "lastAccessed": 1771168748686,
+      "type": "file"
+    },
+    {
+      "path": "docker/sandbox/dart/runner.dart",
+      "accessCount": 2,
+      "lastAccessed": 1771168749422,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/domain/Submission.kt",
+      "accessCount": 2,
+      "lastAccessed": 1771168874111,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/domain/enums.kt",
+      "accessCount": 2,
+      "lastAccessed": 1771168874205,
+      "type": "file"
+    },
+    {
+      "path": "PRD.md",
+      "accessCount": 1,
+      "lastAccessed": 1771167830039,
+      "type": "file"
+    },
+    {
+      "path": "HELP.md",
+      "accessCount": 1,
+      "lastAccessed": 1771167830066,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/domain/TestCaseResult.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167836639,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/Application.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167836729,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/api/dto/SubmissionResponse.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167839103,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/api/dto/SubmissionRequest.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167839132,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/repository/SubmissionRepository.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167839157,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/api/SubmissionController.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167841488,
+      "type": "file"
+    },
+    {
+      "path": "src/test/kotlin/com/aandiclub/online/judge/api/SubmissionControllerTest.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167845026,
+      "type": "file"
+    },
+    {
+      "path": "src/test/kotlin/com/aandiclub/online/judge/service/SubmissionServiceTest.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771167845085,
+      "type": "file"
+    },
+    {
+      "path": "src/main/resources/application.yaml",
+      "accessCount": 1,
+      "lastAccessed": 1771167847601,
+      "type": "file"
+    },
+    {
+      "path": "docker/docker-compose.yml",
+      "accessCount": 1,
+      "lastAccessed": 1771167847712,
+      "type": "file"
+    },
+    {
+      "path": ".env.example",
+      "accessCount": 1,
+      "lastAccessed": 1771167850501,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 1,
+      "lastAccessed": 1771167850802,
+      "type": "directory"
+    },
+    {
+      "path": "docker/sandbox/python/Dockerfile",
+      "accessCount": 1,
+      "lastAccessed": 1771168420066,
+      "type": "file"
+    },
+    {
+      "path": "docker/sandbox/python/runner.py",
+      "accessCount": 1,
+      "lastAccessed": 1771168449871,
+      "type": "file"
+    },
+    {
+      "path": "src/main/kotlin/com/aandiclub/online/judge/sandbox/DockerStatsClient.kt",
+      "accessCount": 1,
+      "lastAccessed": 1771168946987,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

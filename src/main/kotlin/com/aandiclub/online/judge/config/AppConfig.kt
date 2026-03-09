@@ -7,11 +7,14 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.data.redis.connection.ReactiveRedisConnectionFactory
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate
 import org.springframework.data.redis.listener.ReactiveRedisMessageListenerContainer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 
 @ConfigurationProperties(prefix = "judge.sandbox")
 data class SandboxProperties(
     val timeLimitSeconds: Int = 2,
-    val memoryLimitMb: Int = 128,
+    val memoryLimitMb: Int = 256,
     val cpuLimit: String = "1.0",
     val pidsLimit: Int = 50,
     val images: Map<String, String> = mapOf(
@@ -22,7 +25,11 @@ data class SandboxProperties(
 )
 
 @Configuration
-@EnableConfigurationProperties(SandboxProperties::class)
+@EnableConfigurationProperties(
+    SandboxProperties::class,
+    ProblemCatalogProperties::class,
+    RateLimitProperties::class,
+)
 class AppConfig {
 
     @Bean
@@ -34,4 +41,7 @@ class AppConfig {
     fun reactiveRedisMessageListenerContainer(
         factory: ReactiveRedisConnectionFactory,
     ): ReactiveRedisMessageListenerContainer = ReactiveRedisMessageListenerContainer(factory)
+
+    @Bean
+    fun judgeWorkerScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 }

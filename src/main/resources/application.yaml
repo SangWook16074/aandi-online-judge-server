@@ -13,16 +13,45 @@ server:
   port: ${SERVER_PORT:8080}
 
 logging:
+  structured:
+    format:
+      console: logstash
   level:
     com.aandiclub.online.judge: DEBUG
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
 judge:
+  rate-limit:
+    enabled: ${JUDGE_RATE_LIMIT_ENABLED:true}
+    submit-requests: ${JUDGE_RATE_LIMIT_SUBMIT_REQUESTS:30}
+    window-seconds: ${JUDGE_RATE_LIMIT_WINDOW_SECONDS:60}
   sandbox:
     time-limit-seconds: ${SANDBOX_TIME_LIMIT_SECONDS:2}
-    memory-limit-mb: ${SANDBOX_MEMORY_LIMIT_MB:128}
+    memory-limit-mb: ${SANDBOX_MEMORY_LIMIT_MB:256}
     cpu-limit: ${SANDBOX_CPU_LIMIT:1.0}
     pids-limit: ${SANDBOX_PIDS_LIMIT:50}
     images:
       python: ${SANDBOX_IMAGE_PYTHON:judge-sandbox-python:latest}
       kotlin: ${SANDBOX_IMAGE_KOTLIN:judge-sandbox-kotlin:latest}
       dart: ${SANDBOX_IMAGE_DART:judge-sandbox-dart:latest}
+  problems:
+    items:
+      quiz-101:
+        test-cases:
+          - case-id: 1
+            args: [3, 5]
+            expected-output: "8"

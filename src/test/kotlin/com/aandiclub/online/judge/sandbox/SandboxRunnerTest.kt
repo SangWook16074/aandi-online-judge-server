@@ -3,6 +3,8 @@ package com.aandiclub.online.judge.sandbox
 import com.aandiclub.online.judge.config.SandboxProperties
 import com.aandiclub.online.judge.domain.Language
 import com.aandiclub.online.judge.domain.TestCaseStatus
+import tools.jackson.databind.ObjectMapper
+import io.mockk.mockk
 import kotlinx.coroutines.test.runTest
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -23,7 +25,9 @@ class SandboxRunnerTest {
         ),
     )
 
-    private val runner = SandboxRunner(properties)
+    private val objectMapper = ObjectMapper()
+    private val dockerStatsClient = mockk<DockerStatsClient>(relaxed = true)
+    private val runner = SandboxRunner(properties, objectMapper, dockerStatsClient)
 
     // ── 설정 로드 ─────────────────────────────────────────────────────────
 
@@ -38,43 +42,19 @@ class SandboxRunnerTest {
         assertEquals("judge-sandbox-dart:latest", properties.images["dart"])
     }
 
-    // ── 미구현 단계 동작 확인 (Phase 1 구현 전) ───────────────────────────
-
-    @Test
-    fun `run throws NotImplementedError before Phase 1 is implemented`() = runTest {
-        val input = SandboxInput(
-            code = "def solution(a, b): return a + b",
-            args = listOf(3, 5),
-        )
-
-        assertThrows<NotImplementedError> {
-            runner.run(Language.PYTHON, input)
-        }
-    }
-
-    @Test
-    fun `run throws NotImplementedError for kotlin before Phase 1`() = runTest {
-        val input = SandboxInput(
-            code = "fun solution(a: Int, b: Int) = a + b",
-            args = listOf(3, 5),
-        )
-
-        assertThrows<NotImplementedError> {
-            runner.run(Language.KOTLIN, input)
-        }
-    }
-
     // ── 미설정 언어 처리 ──────────────────────────────────────────────────
 
     @Test
     fun `run throws IllegalStateException when language image is not configured`() = runTest {
-        val emptyProps = SandboxProperties(images = emptyMap())
-        val runnerWithNoImages = SandboxRunner(emptyProps)
-
+        val emptyRunner = SandboxRunner(
+            SandboxProperties(images = emptyMap()),
+            objectMapper,
+            dockerStatsClient,
+        )
         val input = SandboxInput(code = "def solution(): pass", args = emptyList())
 
         val ex = assertThrows<IllegalStateException> {
-            runnerWithNoImages.run(Language.PYTHON, input)
+            emptyRunner.run(Language.PYTHON, input)
         }
         assert(ex.message!!.contains("PYTHON"))
     }
@@ -101,6 +81,19 @@ class SandboxRunnerTest {
             memoryMb = 0.0,
         )
         assertEquals(TestCaseStatus.TIME_LIMIT_EXCEEDED, output.status)
+        assertNotNull(output.error)
+    }
+
+    @Test
+    fun `SandboxOutput with COMPILE_ERROR has correct status`() {
+        val output = SandboxOutput(
+            status = TestCaseStatus.COMPILE_ERROR,
+            output = null,
+            error = "COMPILE_ERROR: syntax error",
+            timeMs = 0.0,
+            memoryMb = 0.0,
+        )
+        assertEquals(TestCaseStatus.COMPILE_ERROR, output.status)
         assertNotNull(output.error)
     }
 }
