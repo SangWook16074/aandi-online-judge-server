@@ -1,6 +1,8 @@
 spring:
   application:
     name: online.judge
+  main:
+    web-application-type: reactive
 
   data:
     mongodb:
