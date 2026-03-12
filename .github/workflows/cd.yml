@@ -292,51 +292,49 @@ jobs:
           export AWS_CONTAINER_NAME AWS_APP_PORT
 
           {
-            cat <<'COMPOSE_TOP'
-            services:
-              mongodb:
-                image: ${MONGODB_IMAGE:-mongo:8}
-                container_name: ${MONGODB_CONTAINER_NAME:-judge-mongodb}
-                restart: unless-stopped
-                ports:
-                  - "${MONGODB_PORT:-27017}:27017"
-                environment:
-                  MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}
-                  MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
-                  MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}
-                volumes:
-                  - mongo_data:/data/db
-                networks:
-                  - app_net
-                healthcheck:
-                  test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-                  interval: 10s
-                  timeout: 5s
-                  retries: 5
-
-              app:
-                image: ${IMAGE_URI}
-                container_name: ${AWS_CONTAINER_NAME}
-                restart: unless-stopped
-                ports:
-                  - "${AWS_APP_PORT}:8080"
-                networks:
-                  - app_net
-                volumes:
-                  - /var/run/docker.sock:/var/run/docker.sock
-                environment:
-            COMPOSE_TOP
+            printf '%s\n' \
+              'services:' \
+              '  mongodb:' \
+              '    image: ${MONGODB_IMAGE:-mongo:8}' \
+              '    container_name: ${MONGODB_CONTAINER_NAME:-judge-mongodb}' \
+              '    restart: unless-stopped' \
+              '    ports:' \
+              '      - "${MONGODB_PORT:-27017}:27017"' \
+              '    environment:' \
+              '      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER}' \
+              '      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}' \
+              '      MONGO_INITDB_DATABASE: ${MONGODB_DATABASE}' \
+              '    volumes:' \
+              '      - mongo_data:/data/db' \
+              '    networks:' \
+              '      - app_net' \
+              '    healthcheck:' \
+              "      test: [\"CMD\", \"mongosh\", \"--eval\", \"db.adminCommand('ping')\"]" \
+              '      interval: 10s' \
+              '      timeout: 5s' \
+              '      retries: 5' \
+              '' \
+              '  app:' \
+              '    image: ${IMAGE_URI}' \
+              '    container_name: ${AWS_CONTAINER_NAME}' \
+              '    restart: unless-stopped' \
+              '    ports:' \
+              '      - "${AWS_APP_PORT}:8080"' \
+              '    networks:' \
+              '      - app_net' \
+              '    volumes:' \
+              '      - /var/run/docker.sock:/var/run/docker.sock' \
+              '    environment:'
             for key in "${app_env_keys[@]}"; do
-              printf "                  - %s=\${%s}\n" "${key}" "${key}"
+              printf '      - %s=${%s}\n' "${key}" "${key}"
             done
-            cat <<'COMPOSE_BOTTOM'
-            networks:
-              app_net:
-                name: ${APP_DOCKER_NETWORK}
-
-            volumes:
-              mongo_data:
-            COMPOSE_BOTTOM
+            printf '%s\n' \
+              'networks:' \
+              '  app_net:' \
+              '    name: ${APP_DOCKER_NETWORK}' \
+              '' \
+              'volumes:' \
+              '  mongo_data:'
           } > "${AWS_APP_DIR}/docker-compose.yml"
 
           aws ecr get-login-password --region "${AWS_REGION}" \
