@@ -287,6 +287,15 @@ jobs:
             append_runtime_env "MONGODB_URI" "mongodb://${MONGODB_USER}:${MONGODB_PASSWORD}@mongodb:27017/${MONGODB_DATABASE}?authSource=admin"
           fi
 
+          # In containerized deployment, localhost points to the app container itself.
+          # Default Redis host/port to the redis service unless explicitly set otherwise.
+          if [[ -z "${REDIS_HOST:-}" || "${REDIS_HOST}" == "localhost" || "${REDIS_HOST}" == "127.0.0.1" ]]; then
+            append_runtime_env "REDIS_HOST" "redis"
+          else
+            append_runtime_env "REDIS_HOST" "${REDIS_HOST}"
+          fi
+          append_runtime_env "REDIS_PORT" "${REDIS_PORT:-6379}"
+
           APP_DOCKER_NETWORK="${AWS_APP_NETWORK:-online-judge-net}"
           export APP_DOCKER_NETWORK IMAGE_URI
           export AWS_CONTAINER_NAME AWS_APP_PORT
@@ -310,6 +319,20 @@ jobs:
               '      - app_net' \
               '    healthcheck:' \
               "      test: [\"CMD\", \"mongosh\", \"--eval\", \"db.adminCommand('ping')\"]" \
+              '      interval: 10s' \
+              '      timeout: 5s' \
+              '      retries: 5' \
+              '' \
+              '  redis:' \
+              '    image: ${REDIS_IMAGE:-redis:7-alpine}' \
+              '    container_name: ${REDIS_CONTAINER_NAME:-judge-redis}' \
+              '    restart: unless-stopped' \
+              '    ports:' \
+              '      - "${REDIS_PORT:-6379}:6379"' \
+              '    networks:' \
+              '      - app_net' \
+              '    healthcheck:' \
+              '      test: ["CMD", "redis-cli", "ping"]' \
               '      interval: 10s' \
               '      timeout: 5s' \
               '      retries: 5' \
@@ -341,5 +364,5 @@ jobs:
             | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
           docker compose -f "${AWS_APP_DIR}/docker-compose.yml" pull app
-          docker compose -f "${AWS_APP_DIR}/docker-compose.yml" up -d mongodb app
+          docker compose -f "${AWS_APP_DIR}/docker-compose.yml" up -d mongodb redis app
           EOF
