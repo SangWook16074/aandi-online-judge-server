@@ -39,6 +39,7 @@ import kotlin.math.max
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = [
         "judge.rate-limit.enabled=false",
+        "judge.jwt-auth.enabled=false",
     ],
 )
 class SubmissionWorkflowE2ETest {

@@ -8,11 +8,13 @@ import com.aandiclub.online.judge.domain.TestCase
 import com.aandiclub.online.judge.domain.TestCaseResult
 import com.aandiclub.online.judge.domain.TestCaseStatus
 import com.aandiclub.online.judge.logging.SubmissionMdc
+import com.aandiclub.online.judge.repository.ProblemRepository
 import com.aandiclub.online.judge.repository.SubmissionRepository
 import com.aandiclub.online.judge.sandbox.SandboxInput
 import com.aandiclub.online.judge.sandbox.SandboxRunner
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.reactor.awaitSingle
+import kotlinx.coroutines.reactor.awaitSingleOrNull
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate
 import org.springframework.stereotype.Component
@@ -26,6 +28,7 @@ class JudgeWorker(
     private val redisTemplate: ReactiveStringRedisTemplate,
     private val objectMapper: ObjectMapper,
     private val sandboxProperties: SandboxProperties,
+    private val problemRepository: ProblemRepository,
     private val problemCatalogProperties: ProblemCatalogProperties,
 ) {
     private val log = LoggerFactory.getLogger(JudgeWorker::class.java)
@@ -132,6 +135,9 @@ class JudgeWorker(
         TestCaseStatus.COMPILE_ERROR -> SubmissionStatus.COMPILE_ERROR
     }
 
-    private fun loadTestCases(problemId: String): List<TestCase> =
-        problemCatalogProperties.find(problemId)?.testCases ?: emptyList()
+    private suspend fun loadTestCases(problemId: String): List<TestCase> {
+        val dbProblem = problemRepository.findById(problemId).awaitSingleOrNull()
+        if (dbProblem != null) return dbProblem.testCases
+        return problemCatalogProperties.find(problemId)?.testCases ?: emptyList()
+    }
 }

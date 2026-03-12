@@ -1,5 +1,5 @@
 {
-  "last_turn_at": "2026-03-09T13:16:32.209Z",
-  "turn_count": 17,
-  "last_agent_output": "현재 코드 기준(API로 노출되는 경로)입니다.\n\n**비즈니스 API**\n- `POST /v1/submissions`  \n제출 생성\n- `GET /v1/submissions/{su"
+  "last_turn_at": "2026-03-12T11:17:38.063Z",
+  "turn_count": 54,
+  "last_agent_output": "좋습니다. 지금 기준으로는 **GitHub `Environment: production`의 Secrets**에 아래를 넣으면 됩니다.  \n(각 항목은 `Name=키 이름`, `Se"
 }

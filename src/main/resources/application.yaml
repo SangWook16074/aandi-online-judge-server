@@ -35,10 +35,22 @@ springdoc:
     path: /swagger-ui.html
 
 judge:
+  jwt-auth:
+    enabled: ${JUDGE_JWT_AUTH_ENABLED:true}
+    signing-key: ${JUDGE_JWT_AUTH_SIGNING_KEY:}
+    required-role: ${JUDGE_JWT_AUTH_REQUIRED_ROLE:USER}
+    allow-without-role-claim: ${JUDGE_JWT_AUTH_ALLOW_WITHOUT_ROLE_CLAIM:true}
   rate-limit:
     enabled: ${JUDGE_RATE_LIMIT_ENABLED:true}
     submit-requests: ${JUDGE_RATE_LIMIT_SUBMIT_REQUESTS:30}
     window-seconds: ${JUDGE_RATE_LIMIT_WINDOW_SECONDS:60}
+  worker:
+    max-concurrency: ${JUDGE_WORKER_MAX_CONCURRENCY:2}
+  problem-events:
+    enabled: ${JUDGE_PROBLEM_EVENTS_ENABLED:false}
+    queue-url: ${JUDGE_PROBLEM_EVENTS_QUEUE_URL:}
+    wait-time-seconds: ${JUDGE_PROBLEM_EVENTS_WAIT_TIME_SECONDS:20}
+    max-messages: ${JUDGE_PROBLEM_EVENTS_MAX_MESSAGES:10}
   sandbox:
     time-limit-seconds: ${SANDBOX_TIME_LIMIT_SECONDS:2}
     memory-limit-mb: ${SANDBOX_MEMORY_LIMIT_MB:256}

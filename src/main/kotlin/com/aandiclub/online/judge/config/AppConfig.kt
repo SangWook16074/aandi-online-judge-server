@@ -10,6 +10,7 @@ import org.springframework.data.redis.listener.ReactiveRedisMessageListenerConta
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.sync.Semaphore
 
 @ConfigurationProperties(prefix = "judge.sandbox")
 data class SandboxProperties(
@@ -24,11 +25,19 @@ data class SandboxProperties(
     ),
 )
 
+@ConfigurationProperties(prefix = "judge.worker")
+data class WorkerProperties(
+    val maxConcurrency: Int = 2,
+)
+
 @Configuration
 @EnableConfigurationProperties(
     SandboxProperties::class,
     ProblemCatalogProperties::class,
+    ProblemEventProperties::class,
+    JwtAuthProperties::class,
     RateLimitProperties::class,
+    WorkerProperties::class,
 )
 class AppConfig {
 
@@ -44,4 +53,8 @@ class AppConfig {
 
     @Bean
     fun judgeWorkerScope(): CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    @Bean
+    fun judgeWorkerSemaphore(workerProperties: WorkerProperties): Semaphore =
+        Semaphore(workerProperties.maxConcurrency.coerceAtLeast(1))
 }

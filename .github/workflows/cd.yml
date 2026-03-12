@@ -1,0 +1,221 @@
+name: CD
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      id-token: write
+      contents: read
+
+    env:
+      AWS_HOST: ${{ secrets.AWS_HOST }}
+      AWS_USER: ${{ secrets.AWS_USER }}
+      AWS_SSH_KEY: ${{ secrets.AWS_SSH_KEY }}
+      AWS_SSH_KNOWN_HOSTS: ${{ secrets.AWS_SSH_KNOWN_HOSTS }}
+      AWS_PORT: ${{ secrets.AWS_PORT }}
+      AWS_APP_DIR: ${{ secrets.AWS_APP_DIR }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_ECR_REPOSITORY: ${{ secrets.AWS_ECR_REPOSITORY }}
+      AWS_GITHUB_ROLE_ARN: ${{ secrets.AWS_GITHUB_ROLE_ARN }}
+      AWS_CONTAINER_NAME: ${{ secrets.AWS_CONTAINER_NAME }}
+      AWS_APP_PORT: ${{ secrets.AWS_APP_PORT }}
+      AWS_DOCKER_RUN_EXTRA_ARGS: ${{ secrets.AWS_DOCKER_RUN_EXTRA_ARGS }}
+      APP_ENV_VARS: ${{ secrets.APP_ENV_VARS }}
+      JUDGE_JWT_AUTH_SIGNING_KEY: ${{ secrets.JUDGE_JWT_AUTH_SIGNING_KEY }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      MONGODB_USER: ${{ secrets.MONGODB_USER }}
+      MONGODB_PASSWORD: ${{ secrets.MONGODB_PASSWORD }}
+      MONGODB_DATABASE: ${{ secrets.MONGODB_DATABASE }}
+      REDIS_PASSWORD: ${{ secrets.REDIS_PASSWORD }}
+      JUDGE_PROBLEM_EVENTS_QUEUE_URL: ${{ secrets.JUDGE_PROBLEM_EVENTS_QUEUE_URL }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate SemVer Tag
+        run: |
+          if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Invalid tag format: ${GITHUB_REF_NAME}"
+            echo "Expected format: vX.Y.Z"
+            exit 1
+          fi
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+
+      - name: Validate Required Secrets
+        run: |
+          set -euo pipefail
+          required_vars=(
+            AWS_HOST
+            AWS_USER
+            AWS_SSH_KEY
+            AWS_REGION
+            AWS_ACCOUNT_ID
+            AWS_ECR_REPOSITORY
+            AWS_GITHUB_ROLE_ARN
+            JUDGE_JWT_AUTH_SIGNING_KEY
+          )
+          for name in "${required_vars[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required value: ${name}"
+              exit 1
+            fi
+          done
+
+      - name: Run Tests
+        run: ./gradlew --no-daemon test
+
+      - name: Build Boot JAR
+        run: ./gradlew --no-daemon clean bootJar
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_GITHUB_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set Image URI
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${GITHUB_REF_NAME}"
+          IMAGE_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:${IMAGE_TAG}"
+          echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
+
+      - name: Setup QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push App Image (linux/arm64)
+        run: |
+          set -euo pipefail
+          JAR_PATH="$(ls build/libs/*.jar | grep -v 'plain' | head -n 1)"
+          if [[ -z "${JAR_PATH}" ]]; then
+            echo "Boot JAR not found"
+            exit 1
+          fi
+          cp "${JAR_PATH}" app.jar
+
+          docker buildx build \
+            --platform linux/arm64 \
+            --push \
+            -t "${IMAGE_URI}" \
+            .
+
+      - name: Prepare Runtime Env File
+        run: |
+          set -euo pipefail
+          : > online-judge.env
+
+          if [[ -n "${APP_ENV_VARS:-}" ]]; then
+            {
+              echo "# app env vars (stored in GitHub Secrets)"
+              printf "%s\n" "${APP_ENV_VARS}"
+              echo
+            } >> online-judge.env
+          fi
+
+          append_env() {
+            local key="$1"
+            local value="${2:-}"
+            local required="${3:-false}"
+
+            if [[ "${required}" == "true" && -z "${value}" ]]; then
+              echo "Missing required secret: ${key}"
+              exit 1
+            fi
+            if [[ -n "${value}" ]]; then
+              printf "%s=%s\n" "${key}" "${value}" >> online-judge.env
+            fi
+          }
+
+          echo "# app env secrets (individual GitHub Secrets)" >> online-judge.env
+          append_env "JUDGE_JWT_AUTH_SIGNING_KEY" "${JUDGE_JWT_AUTH_SIGNING_KEY}" "true"
+          append_env "MONGODB_URI" "${MONGODB_URI}"
+          append_env "MONGODB_USER" "${MONGODB_USER}"
+          append_env "MONGODB_PASSWORD" "${MONGODB_PASSWORD}"
+          append_env "MONGODB_DATABASE" "${MONGODB_DATABASE}"
+          append_env "REDIS_PASSWORD" "${REDIS_PASSWORD}"
+          append_env "JUDGE_PROBLEM_EVENTS_QUEUE_URL" "${JUDGE_PROBLEM_EVENTS_QUEUE_URL}"
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf "%s" "${AWS_SSH_KEY}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          PORT="${AWS_PORT:-22}"
+          if [[ -n "${AWS_SSH_KNOWN_HOSTS}" ]]; then
+            printf "%s\n" "${AWS_SSH_KNOWN_HOSTS}" > ~/.ssh/known_hosts
+          else
+            ssh-keyscan -p "${PORT}" -H "${AWS_HOST}" > ~/.ssh/known_hosts
+          fi
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Upload Artifacts
+        run: |
+          set -euo pipefail
+          PORT="${AWS_PORT:-22}"
+          scp -P "${PORT}" online-judge.env "${AWS_USER}@${AWS_HOST}:/tmp/online-judge.env"
+
+      - name: Remote Deploy Container
+        run: |
+          set -euo pipefail
+          PORT="${AWS_PORT:-22}"
+          APP_DIR="${AWS_APP_DIR:-/opt/online-judge}"
+          CONTAINER_NAME="${AWS_CONTAINER_NAME:-online-judge}"
+          APP_PORT="${AWS_APP_PORT:-8080}"
+
+          ssh -p "${PORT}" "${AWS_USER}@${AWS_HOST}" \
+            "AWS_APP_DIR='${APP_DIR}' AWS_REGION='${AWS_REGION}' AWS_ACCOUNT_ID='${AWS_ACCOUNT_ID}' AWS_ECR_REPOSITORY='${AWS_ECR_REPOSITORY}' IMAGE_URI='${IMAGE_URI}' AWS_CONTAINER_NAME='${CONTAINER_NAME}' AWS_APP_PORT='${APP_PORT}' AWS_DOCKER_RUN_EXTRA_ARGS='${AWS_DOCKER_RUN_EXTRA_ARGS}' bash -s" <<'EOF'
+          set -euo pipefail
+          mkdir -p "${AWS_APP_DIR}"
+          install -m 600 /tmp/online-judge.env "${AWS_APP_DIR}/.env"
+          rm -f /tmp/online-judge.env
+
+          if ! command -v aws >/dev/null 2>&1; then
+            echo "aws CLI is required on EC2 host"
+            exit 1
+          fi
+          if ! command -v docker >/dev/null 2>&1; then
+            echo "docker is required on EC2 host"
+            exit 1
+          fi
+
+          aws ecr get-login-password --region "${AWS_REGION}" \
+            | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+          docker pull "${IMAGE_URI}"
+          docker rm -f "${AWS_CONTAINER_NAME}" || true
+
+          docker run -d \
+            --name "${AWS_CONTAINER_NAME}" \
+            --restart unless-stopped \
+            -p "${AWS_APP_PORT}:8080" \
+            --env-file "${AWS_APP_DIR}/.env" \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            ${AWS_DOCKER_RUN_EXTRA_ARGS:-} \
+            "${IMAGE_URI}"
+          EOF

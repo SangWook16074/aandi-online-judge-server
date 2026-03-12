@@ -16,6 +16,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactor.awaitSingle
 import kotlinx.coroutines.reactor.awaitSingleOrNull
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.slf4j.LoggerFactory
 import org.springframework.data.redis.core.ReactiveStringRedisTemplate
 import org.springframework.data.redis.listener.ChannelTopic
@@ -31,6 +33,7 @@ class SubmissionService(
     private val listenerContainer: ReactiveRedisMessageListenerContainer,
     private val judgeWorker: JudgeWorker,
     private val judgeWorkerScope: CoroutineScope,
+    private val judgeWorkerSemaphore: Semaphore,
     private val objectMapper: ObjectMapper,
 ) {
     private val log = LoggerFactory.getLogger(SubmissionService::class.java)
@@ -47,18 +50,20 @@ class SubmissionService(
         }
 
         judgeWorkerScope.launch(Dispatchers.IO + SubmissionMdc.context(saved.id)) {
-            runCatching { judgeWorker.execute(saved) }
-                .onFailure { ex ->
-                    log.error("Judge worker failed", ex)
-                    val errorPayload = objectMapper.writeValueAsString(
-                        mapOf(
-                            "event" to "error",
-                            "submissionId" to saved.id,
-                            "message" to (ex.message ?: "internal worker error"),
+            judgeWorkerSemaphore.withPermit {
+                runCatching { judgeWorker.execute(saved) }
+                    .onFailure { ex ->
+                        log.error("Judge worker failed", ex)
+                        val errorPayload = objectMapper.writeValueAsString(
+                            mapOf(
+                                "event" to "error",
+                                "submissionId" to saved.id,
+                                "message" to (ex.message ?: "internal worker error"),
+                            )
                         )
-                    )
-                    redisTemplate.convertAndSend("submission:${saved.id}", errorPayload).awaitSingle()
-                }
+                        redisTemplate.convertAndSend("submission:${saved.id}", errorPayload).awaitSingle()
+                    }
+            }
         }
         return SubmissionAccepted(
             submissionId = saved.id,

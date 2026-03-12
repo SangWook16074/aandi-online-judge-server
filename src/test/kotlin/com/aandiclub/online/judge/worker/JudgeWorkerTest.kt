@@ -4,10 +4,12 @@ import com.aandiclub.online.judge.config.SandboxProperties
 import com.aandiclub.online.judge.config.ProblemCatalogProperties
 import com.aandiclub.online.judge.config.ProblemItem
 import com.aandiclub.online.judge.domain.Language
+import com.aandiclub.online.judge.domain.Problem
 import com.aandiclub.online.judge.domain.Submission
 import com.aandiclub.online.judge.domain.SubmissionStatus
 import com.aandiclub.online.judge.domain.TestCase
 import com.aandiclub.online.judge.domain.TestCaseStatus
+import com.aandiclub.online.judge.repository.ProblemRepository
 import com.aandiclub.online.judge.repository.SubmissionRepository
 import com.aandiclub.online.judge.sandbox.SandboxInput
 import com.aandiclub.online.judge.sandbox.SandboxOutput
@@ -27,6 +29,7 @@ import tools.jackson.databind.ObjectMapper
 class JudgeWorkerTest {
     private val sandboxRunner = mockk<SandboxRunner>()
     private val submissionRepository = mockk<SubmissionRepository>()
+    private val problemRepository = mockk<ProblemRepository>()
     private val redisTemplate = mockk<ReactiveStringRedisTemplate>()
     private val objectMapper = ObjectMapper()
     private val sandboxProperties = SandboxProperties(memoryLimitMb = 128)
@@ -44,8 +47,13 @@ class JudgeWorkerTest {
         redisTemplate = redisTemplate,
         objectMapper = objectMapper,
         sandboxProperties = sandboxProperties,
+        problemRepository = problemRepository,
         problemCatalogProperties = problemCatalogProperties,
     )
+
+    init {
+        every { problemRepository.findById(any<String>()) } returns Mono.empty<Problem>()
+    }
 
     @Test
     fun `execute publishes case result and done when accepted`() = runTest {
