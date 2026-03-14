@@ -13,6 +13,7 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+  forward-headers-strategy: framework
 
 logging:
   structured:
@@ -37,6 +38,15 @@ springdoc:
     path: /swagger-ui.html
 
 judge:
+  cors:
+    api-allowed-origin-patterns: "${JUDGE_CORS_API_ALLOWED_ORIGIN_PATTERNS:http://localhost:*,http://127.0.0.1:*,https://aandiclub.com,https://admin.aandiclub.com,https://online.judge.aandiclub.com}"
+    api-allowed-methods: "${JUDGE_CORS_API_ALLOWED_METHODS:GET,POST,PUT,PATCH,DELETE,OPTIONS}"
+    allowed-headers: "${JUDGE_CORS_ALLOWED_HEADERS:*}"
+    exposed-headers: "${JUDGE_CORS_EXPOSED_HEADERS:Location}"
+    allow-credentials: ${JUDGE_CORS_ALLOW_CREDENTIALS:false}
+    max-age-seconds: ${JUDGE_CORS_MAX_AGE_SECONDS:3600}
+  openapi:
+    server-url: ${APP_OPENAPI_SERVER_URL:https://api.aandiclub.com}
   jwt-auth:
     enabled: ${JUDGE_JWT_AUTH_ENABLED:true}
     signing-key: ${JUDGE_JWT_AUTH_SIGNING_KEY:}
